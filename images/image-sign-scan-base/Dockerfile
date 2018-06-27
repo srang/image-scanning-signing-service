@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/rhel7/rhel
 
-ENV OCP_VERSION=3.7
+ENV OCP_VERSION=3.9
 
 ADD bin/sign-image /usr/local/bin/
 
