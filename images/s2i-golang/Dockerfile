@@ -16,7 +16,7 @@ ENV HOME=/opt/app-root \
 
 COPY s2i $STI_SCRIPTS_PATH
 
-RUN yum repolist > /dev/null && \
+RUN yum repolist && \
     yum-config-manager --enable rhel-7-server-optional-rpms && \
     yum clean all && \
     INSTALL_PKGS="golang" && \
