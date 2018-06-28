@@ -11,7 +11,7 @@ objects:
   metadata:
     name: ${IMAGE_SIGNING_REQUEST_NAME}
   spec:
-    imageStreamTag: "${IMAGE_STREAM_TAG}"
+    imageStreamTag: "${IMAGE_STREAM_TAG}:latest"
 parameters:
 - name: IMAGE_SIGNING_REQUEST_NAME
   displayName: Image Signing Request Name

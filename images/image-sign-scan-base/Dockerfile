@@ -8,6 +8,6 @@ RUN rpm -ihv https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.
     yum repolist > /dev/null && \
     yum clean all && \
     INSTALL_PKGS="docker atomic jq atomic-openshift-clients image-inspector tar" && \
-    yum install -y --enablerepo=rhel-7-server-ose-${OCP_VERSION}-rpms --enablerepo=rhel-7-server-extras-rpms --setopt=tsflags=nodocs $INSTALL_PKGS && \
+    yum install -y --disable=rhel-7-server-htb-rpms --enablerepo=rhel-7-server-ose-${OCP_VERSION}-rpms --enablerepo=rhel-7-server-extras-rpms --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
