@@ -22,7 +22,7 @@ const (
 	envGpgSecret                = "GPG_SECRET"
 	defaultGpgSignBy            = "openshift@example.com"
 	envGpgSignBy                = "GPG_SIGN_BY"
-	defaultSignScanImage        = "image-sign-scan-base"
+	defaultSignScanImage        = "docker-registry.default.svc:5000/image-sign-scan-base"
 	envSignScanImage            = "SIGN_SCAN_IMAGE"
 )
 
