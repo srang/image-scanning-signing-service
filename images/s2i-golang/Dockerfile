@@ -16,7 +16,8 @@ ENV HOME=/opt/app-root \
 
 COPY s2i $STI_SCRIPTS_PATH
 
-RUN yum-config-manager --enable rhel-7-server-optional-rpms --disable rhel-7-server-aus-rpms,rhel-7-server-htb-rpms,rhel-7-server-nfv-rpms,rhel-7-server-rt-rpms,rhel-7-server-tus-rpms && \
+RUN yum-config-manager --disable rhel-7-server-aus-rpms,rhel-7-server-htb-rpms,rhel-7-server-nfv-rpms,rhel-7-server-rt-rpms,rhel-7-server-tus-rpms && \
+    yum-config-manager --enable rhel-7-server-optional-rpms && \
     yum repolist && \
     yum clean all && \
     INSTALL_PKGS="golang" && \
