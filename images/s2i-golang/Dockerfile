@@ -17,7 +17,7 @@ ENV HOME=/opt/app-root \
 COPY s2i $STI_SCRIPTS_PATH
 
 RUN yum repolist > /dev/null && \
-    yum-config-manager --enable rhel-7-server-optional-rpms && \
+    yum-config-manager --disable rhel-7-server-htb-rpms --enable rhel-7-server-optional-rpms && \
     yum clean all && \
     INSTALL_PKGS="golang" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
