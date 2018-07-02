@@ -1,0 +1,6 @@
+kind: ProjectRequest
+apiVersion: v1
+metadata:
+  name: quay-support
+displayName: Quay Support
+description: Supporting resources for quay enterprise registry

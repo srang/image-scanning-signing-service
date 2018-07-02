@@ -18,6 +18,11 @@
           file_action: create
           tags:
             - pipeline
+        - name: quay-support
+          file: "{{ inventory_dir }}/../files/projects/projects-quay-support.yml"
+          file_action: create
+          tags:
+            - quay
     - object: policy
       content:
         - name: core-policy
@@ -85,6 +90,24 @@
           namespace: image-scanning-signing-pipeline
           tags:
             - pipeline
+        - name: "deploy postgres"
+          template: "openshift//postgresql-persistent"
+          params: "{{ inventory_dir }}/../files/deployments/quay-support/params-postgres"
+          namespace: quay-support
+          tags:
+            - quay
+        - name: "create redis template"
+          file: "{{ inventory_dir }}/../files/deployments/quay-support/redis.yml"
+          file_action: create
+          namespace: openshift
+          tags:
+            - quay
+        - name: "deploy redis"
+          template: "openshift//redis-persistent"
+          params: "{{ inventory_dir }}/../files/deployments/quay-support/params"
+          namespace: quay-support
+          tags:
+            - quay
         - name: image-scanning-signing-service
           namespace: "image-management"
           template: "{{ inventory_dir }}/../files/deployments/image-scanning-signing-service/template.yml"
@@ -97,3 +120,17 @@
           params: "{{ inventory_dir }}/../files/deployments/image-scanning-signing-pipeline/params"
           tags:
             - pipeline
+    - object: ingress
+      content:
+        - name: "expose postgresql"
+          file: "{{ inventory_dir }}/../files/ingress/postgresql.yml"
+          file_action: apply
+          namespace: quay-support
+          tags:
+            - quay
+        - name: "expose redis"
+          file: "{{ inventory_dir }}/../files/ingress/redis.yml"
+          file_action: apply
+          namespace: quay-support
+          tags:
+            - quay
