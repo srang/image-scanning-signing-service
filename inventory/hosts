@@ -1,2 +1,5 @@
 [seed-hosts]
 localhost ansible_connection=local
+
+[quay_enterprise]
+localhost ansible_connection=local

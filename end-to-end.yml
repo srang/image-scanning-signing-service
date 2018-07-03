@@ -1,0 +1,54 @@
+---
+#- import_playbook: roles/casl-ansible/playbooks/openshift-cluster-seed.yml
+
+- name: Gather database facts
+  hosts: localhost
+  tags:
+    - quay
+  tasks:
+    - name: "get database nodeport"
+      command: oc get service postgresql-ingress -n quay-support -o go-template={%- raw -%}'{{ range .spec.ports }}{{ .nodePort }}{{ end }}'{% endraw %}
+      register: postgresql_host_port
+      when: database_type == "postgresql"
+
+    - name: "get database name"
+      shell: oc get secret postgresql -n quay-support -o go-template={%- raw -%}'{{ index .data "database-name" }}'{% endraw %} | base64 -d
+      register: postgresql_database
+      when: database_type == "postgresql"
+
+    - name: "get database user"
+      shell: oc get secret postgresql -n quay-support -o go-template={%- raw -%}'{{ index .data "database-user" }}'{% endraw %} | base64 -d
+      register: postgresql_user
+      when: database_type == "postgresql"
+
+    - name: "get database password"
+      shell: oc get secret postgresql -n quay-support -o go-template={%- raw -%}'{{ index .data "database-password" }}'{% endraw %} | base64 -d
+      register: postgresql_password
+      when: database_type == "postgresql"
+
+    - name: "assemble database connection"
+      set_fact:
+        postgresql_db_uri: "postgresql://{{ postgresql_user }}:{{ postgresql_password }}@{{ database_host }}:{{ postgresql_host_port }}/{{ postgresql_database }}"
+      when: database_type == "postgresql"
+
+- name: Gather redis facts
+  hosts: localhost
+  tags:
+    - quay
+  tasks:
+    - name: "get redis nodeport"
+      command: oc get service redis-ingress -n quay-support -o go-template={%- raw -%}'{{ range .spec.ports }}{{ .nodePort }}{{ end }}'{% endraw %}
+      register: redis_host_port
+
+    - name: "get redis password"
+      shell: oc get secret redis -n quay-support -o go-template={%- raw -%}'{{ index .data "database-password" }}'{% endraw %} | base64 -d
+      register: redis_password
+
+- name: Install Quay Enterprise
+  hosts: quay_enterprise
+  tasks:
+    - name: Install Quay
+      include_role:
+        name: config-quay-enterprise
+      tags:
+        - quay

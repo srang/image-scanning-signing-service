@@ -4,7 +4,8 @@ metadata:
   name: postgresql-ingress
 spec:
   ports:
-  - nodePort: 30482
+  - name: postgresql
+    nodePort: 30482
     port: 5432
     targetPort: 5432
   type: LoadBalancer

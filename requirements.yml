@@ -6,3 +6,7 @@
   scm: git
   src: https://github.com/redhat-cop/casl-ansible
   version: v3.7.0
+- name: infra-ansible
+  scm: git
+  src: https://github.com/srang/infra-ansible
+  version: quay-enterprise-refarch
