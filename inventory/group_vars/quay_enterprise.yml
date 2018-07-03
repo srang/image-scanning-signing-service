@@ -1,3 +1,10 @@
 # could pull from minishift but doesn't make sense
 database_host: 192.168.42.185
 redis_host: 192.168.42.185
+container_credentials_file: ~/.docker/config.json
+quay_config_dir: ~/quay/config
+quay_container_config_dir: ~/quay/conf/stack
+quay_storage_dir: ~/quay/storage
+quay_container_storage_dir: ~/quay/datastorage
+quay_config_owner: srang
+quay_config_group: srang
