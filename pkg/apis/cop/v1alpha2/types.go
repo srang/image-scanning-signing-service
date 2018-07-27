@@ -39,6 +39,13 @@ type ImageScanningRequest struct {
 	Status            ImageScanningRequestStatus `json:"status,omitempty"`
 }
 
+type ImageVerificationRequest struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              ImageVerificationRequestSpec   `json:"spec"`
+	Status            ImageVerificationRequestStatus `json:"status,omitempty"`
+}
+
 type ImageSigningRequestSpec struct {
 	ImageStreamTag       string `json:"imageStreamTag"`
 	SigningKeySecretName string `json:"signingKeySecretName,omitempty"`
@@ -64,6 +71,14 @@ type ImageScanningRequestStatus struct {
 	EndTime    metav1.Time               `json:"endTime,omitempty"`
 }
 
+type ImageVerificationRequestSpec struct {
+	ImageStreamTag       string `json:"imageStreamTag"`
+	SigningKeySecretName string `json:"signingKeySecretName,omitempty"`
+}
+type ImageVerificationRequestStatus struct {
+	SignatureStatus SignatureStatus `json:"signatureStatus,omitempty"`
+}
+
 type ScanResult struct {
 	TotalRules  int `json:"totalRules"`
 	PassedRules int `json:"passedRules"`
@@ -76,6 +91,13 @@ type ImageExecutionCondition struct {
 	LastTransitionTime metav1.Time                 `json:"lastTransitionTime,omitempty"`
 	Type               ImageExecutionConditionType `json:"type,omitempty"`
 }
+
+type SignatureStatus string
+
+const (
+	SignatureValid   SignatureStatus = "Valid"
+	SignatureInvalid SignatureStatus = "Invalid"
+)
 
 type ImageExecutionPhase string
 
