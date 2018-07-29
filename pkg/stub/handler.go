@@ -251,6 +251,7 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 			}
 
 		}
+	case *v1alpha2.ImageVerificationRequest:
 
 	case *corev1.Pod:
 
