@@ -84,11 +84,11 @@ type ImageVerificationRequestSpec struct {
 	SigningKeySecretName string `json:"signingKeySecretName,omitempty"`
 }
 type ImageVerificationRequestStatus struct {
-	Conditions []ImageExecutionCondition `json:"conditions,omitempty"`
-	Phase      ImageExecutionPhase       `json:"phase,omitempty"`
-	SignatureStatus SignatureStatus `json:"signatureStatus,omitempty"`
-	StartTime  metav1.Time               `json:"startTime,omitempty"`
-	EndTime    metav1.Time               `json:"endTime,omitempty"`
+	Conditions      []ImageExecutionCondition `json:"conditions,omitempty"`
+	Phase           ImageExecutionPhase       `json:"phase,omitempty"`
+	SignatureStatus SignatureStatus           `json:"signatureStatus,omitempty"`
+	StartTime       metav1.Time               `json:"startTime,omitempty"`
+	EndTime         metav1.Time               `json:"endTime,omitempty"`
 }
 
 type ScanResult struct {

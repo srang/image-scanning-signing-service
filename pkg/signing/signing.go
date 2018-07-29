@@ -13,6 +13,38 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+func UpdateOnSigningPodLaunch(message string, unsignedImage string, imageSigningRequest v1alpha2.ImageSigningRequest) error {
+	imageSigningRequestCopy := imageSigningRequest.DeepCopy()
+
+	condition := util.NewImageExecutionCondition(message, corev1.ConditionTrue, v1alpha2.ImageExecutionConditionInitialization)
+
+	imageSigningRequestCopy.Status.UnsignedImage = unsignedImage
+	imageSigningRequestCopy.Status.StartTime = condition.LastTransitionTime
+
+	return updateImageSigningRequest(imageSigningRequestCopy, condition, v1alpha2.PhaseRunning)
+}
+
+func UpdateOnImageSigningInitializationFailure(message string, imageSigningRequest v1alpha2.ImageSigningRequest) error {
+	imageSigningRequestCopy := imageSigningRequest.DeepCopy()
+
+	condition := util.NewImageExecutionCondition(message, corev1.ConditionFalse, v1alpha2.ImageExecutionConditionInitialization)
+
+	imageSigningRequestCopy.Status.StartTime = condition.LastTransitionTime
+	imageSigningRequestCopy.Status.EndTime = condition.LastTransitionTime
+
+	return updateImageSigningRequest(imageSigningRequestCopy, condition, v1alpha2.PhaseFailed)
+}
+
+func updateImageSigningRequest(imageSigningRequest *v1alpha2.ImageSigningRequest, condition v1alpha2.ImageExecutionCondition, phase v1alpha2.ImageExecutionPhase) error {
+
+	imageSigningRequest.Status.Conditions = append(imageSigningRequest.Status.Conditions, condition)
+	imageSigningRequest.Status.Phase = phase
+
+	err := sdk.Update(imageSigningRequest)
+
+	return err
+}
+
 func UpdateOnImageSigningCompletionError(message string, imageSigningRequest v1alpha2.ImageSigningRequest) error {
 	imageSigningRequestCopy := imageSigningRequest.DeepCopy()
 
@@ -32,38 +64,6 @@ func UpdateOnImageSigningCompletionSuccess(message string, signedImage string, i
 	imageSigningRequestCopy.Status.EndTime = condition.LastTransitionTime
 
 	return updateImageSigningRequest(imageSigningRequestCopy, condition, v1alpha2.PhaseCompleted)
-}
-
-func UpdateOnImageSigningInitializationFailure(message string, imageSigningRequest v1alpha2.ImageSigningRequest) error {
-	imageSigningRequestCopy := imageSigningRequest.DeepCopy()
-
-	condition := util.NewImageExecutionCondition(message, corev1.ConditionFalse, v1alpha2.ImageExecutionConditionInitialization)
-
-	imageSigningRequestCopy.Status.StartTime = condition.LastTransitionTime
-	imageSigningRequestCopy.Status.EndTime = condition.LastTransitionTime
-
-	return updateImageSigningRequest(imageSigningRequestCopy, condition, v1alpha2.PhaseFailed)
-}
-
-func UpdateOnSigningPodLaunch(message string, unsignedImage string, imageSigningRequest v1alpha2.ImageSigningRequest) error {
-	imageSigningRequestCopy := imageSigningRequest.DeepCopy()
-
-	condition := util.NewImageExecutionCondition(message, corev1.ConditionTrue, v1alpha2.ImageExecutionConditionInitialization)
-
-	imageSigningRequestCopy.Status.UnsignedImage = unsignedImage
-	imageSigningRequestCopy.Status.StartTime = condition.LastTransitionTime
-
-	return updateImageSigningRequest(imageSigningRequestCopy, condition, v1alpha2.PhaseRunning)
-}
-
-func updateImageSigningRequest(imageSigningRequest *v1alpha2.ImageSigningRequest, condition v1alpha2.ImageExecutionCondition, phase v1alpha2.ImageExecutionPhase) error {
-
-	imageSigningRequest.Status.Conditions = append(imageSigningRequest.Status.Conditions, condition)
-	imageSigningRequest.Status.Phase = phase
-
-	err := sdk.Update(imageSigningRequest)
-
-	return err
 }
 
 func LaunchSigningPod(config config.Config, image string, imageDigest string, ownerID string, ownerReference string, gpgSecretName string, gpgSignBy string) (string, error) {
