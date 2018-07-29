@@ -90,7 +90,7 @@ func LaunchVerificationPod(config config.Config, image string, ownerID string, o
 	return key, nil
 }
 
-func createVerificationPod(signScanImage string, targetProject string, image string, ownerID string, ownerReference string, serviceAccount string, gpgSecret string, signedBy string) (*corev1.Pod, error) {
+func createVerificationPod(signScanImage string, targetProject string, image string, imageDigest string, ownerID string, ownerReference string, serviceAccount string, gpgSecret string, signedBy string) (*corev1.Pod, error) {
 
 	priv := true
 
@@ -119,6 +119,10 @@ func createVerificationPod(signScanImage string, targetProject string, image str
 					{
 						Name:  "IMAGE",
 						Value: image,
+					},
+					{
+						Name:  "DIGEST",
+						Value: imageDigest,
 					},
 					{
 						Name:  "SIGNBY",
@@ -164,21 +168,3 @@ func createVerificationPod(signScanImage string, targetProject string, image str
 
 	return pod, nil
 }
-
-func DeleteVerificationPod(name string, namespace string) error {
-
-	pod := &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-
-	return sdk.Delete(pod)
-
-}
-

@@ -24,6 +24,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"github.com/redhat-cop/image-scanning-signing-service/pkg/verification"
 )
 
 func NewHandler(config config.Config) sdk.Handler {
@@ -216,7 +217,7 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 				}
 
-				dockerImageRegistry, dockerImageID, err := util.ExtractImageIDFromImageReference(requestImageStreamTag.Image.DockerImageReference)
+				dockerImageRegistry, _, err := util.ExtractImageIDFromImageReference(requestImageStreamTag.Image.DockerImageReference)
 
 				if err != nil {
 					return err
@@ -240,7 +241,7 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 				logrus.Infof("Scanning Pod Launched '%s'", scanningPodName)
 
-				err = scanning.UpdateOnScanningPodLaunch(fmt.Sprintf("Scanning Pod Launched '%s'", scanningPodName), dockerImageID, *imageScanningRequest)
+				err = scanning.UpdateOnScanningPodLaunch(fmt.Sprintf("Scanning Pod Launched '%s'", scanningPodName), *imageScanningRequest)
 
 				if err != nil {
 					return err
@@ -535,6 +536,100 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 				}
 
+			}
+		} else if podTypeAnnotation == common.ImageVerificationTypeAnnotation {
+			podOwnerAnnotation := pod.Annotations[common.CopOwnerAnnotation]
+
+			ivrNamespace, ivrName, err := cache.SplitMetaNamespaceKey(podOwnerAnnotation)
+
+			imageVerificationRequest := &v1alpha2.ImageVerificationRequest{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ImageVerificationRequest",
+					APIVersion: "cop.redhat.com/v1alpha2",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ivrName,
+					Namespace: ivrNamespace,
+				},
+			}
+
+			err = sdk.Get(imageVerificationRequest)
+
+			if err != nil {
+				logrus.Warnf("Could not find ImageVerificationRequest '%s' from pod '%s'", podOwnerAnnotation, podMetadataKey)
+				return nil
+			}
+
+			// Check if ImageVerificationRequest has already been marked as Succeeded or Failed
+			if imageVerificationRequest.Status.Phase == v1alpha2.PhaseCompleted || imageVerificationRequest.Status.Phase == v1alpha2.PhaseFailed {
+				return nil
+			}
+
+			// Check to verfiy ImageSigningRequest is in phase Running
+			if imageVerificationRequest.Status.Phase != v1alpha2.PhaseRunning {
+				return nil
+			}
+
+			// Check if Failed
+			if pod.Status.Phase == corev1.PodFailed {
+				logrus.Infof("Verification Pod Failed. Updating ImageVerificationRequest %s", podOwnerAnnotation)
+
+				err = verification.UpdateOnImageVerificationCompletionError(fmt.Sprintf("Verification Pod Failed '%v'", err), *imageVerificationRequest)
+
+				if err != nil {
+					return err
+				}
+
+				return nil
+
+			} else if pod.Status.Phase == corev1.PodSucceeded {
+
+				requestImageStreamTag := util.GenerateImageStreamTag(imageVerificationRequest.Spec.ImageStreamTag, imageVerificationRequest.Namespace)
+
+				err := sdk.Get(requestImageStreamTag)
+
+				if k8serrors.IsNotFound(err) {
+
+					errorMessage := fmt.Sprintf("ImageStream %s Not Found in Namespace %s", imageVerificationRequest.Spec.ImageStreamTag, imageVerificationRequest.Namespace)
+					logrus.Warnf(errorMessage)
+
+					err = verification.UpdateOnImageVerificationCompletionError(errorMessage, *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+					return nil
+
+				}
+
+				_, dockerImageID, err := util.ExtractImageIDFromImageReference(requestImageStreamTag.Image.DockerImageReference)
+
+				if err != nil {
+					return err
+				}
+
+				// TODO figure out how to determine success
+				if requestImageStreamTag.Image.Signatures != nil {
+
+					logrus.Infof("Verification Pod Succeeded. Updating ImageVerificationRequest %s", pod.Annotations[common.CopOwnerAnnotation])
+
+					err = verification.UpdateOnImageVerificationCompletionSuccess("Image Signed", v1alpha2.SignatureValid, *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+				} else {
+					err = verification.UpdateOnImageVerificationCompletionError(fmt.Sprintf("No Signature Exists on Image '%s' After Verification Completed", dockerImageID), *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+				}
+
+				return nil
 			}
 		}
 
