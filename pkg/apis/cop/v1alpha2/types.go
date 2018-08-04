@@ -82,6 +82,7 @@ type ImageScanningRequestStatus struct {
 type ImageVerificationRequestSpec struct {
 	ImageStreamTag       string `json:"imageStreamTag"`
 	SigningKeySecretName string `json:"signingKeySecretName,omitempty"`
+	SigningKeySignedBy   string `json:"signingKeySignedBy,omitempty"`
 }
 type ImageVerificationRequestStatus struct {
 	Conditions      []ImageExecutionCondition `json:"conditions,omitempty"`

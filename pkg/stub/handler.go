@@ -253,6 +253,148 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 		}
 	case *v1alpha2.ImageVerificationRequest:
+		if !event.Deleted {
+
+			imageVerificationRequest := o
+			imageVerificationRequestMetadataKey, _ := cache.MetaNamespaceKeyFunc(imageVerificationRequest)
+
+			emptyPhase := v1alpha2.ImageVerificationRequestStatus{}.Phase
+			if imageVerificationRequest.Status.Phase == emptyPhase {
+				_, requestIsTag := util.ParseImageStreamTag(imageVerificationRequest.Spec.ImageStreamTag)
+
+				requestImageStreamTag := util.GenerateImageStreamTag(imageVerificationRequest.Spec.ImageStreamTag, imageVerificationRequest.ObjectMeta.Namespace)
+
+				err := sdk.Get(requestImageStreamTag)
+
+				if err != nil {
+
+					errorMessage := ""
+
+					if k8serrors.IsNotFound(err) {
+						errorMessage = fmt.Sprintf("ImageStreamTag %s Not Found in Namespace %s", imageVerificationRequest.Spec.ImageStreamTag, imageVerificationRequest.Namespace)
+					} else {
+						errorMessage = fmt.Sprintf("Error retrieving ImageStreamTag: %v", err)
+					}
+
+					logrus.Warnf(errorMessage)
+					err = verification.UpdateOnImageVerificationInitializationFailure(errorMessage, *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+					return nil
+
+				}
+
+				dockerImageRegistry, dockerImageID, err := util.ExtractImageIDFromImageReference(requestImageStreamTag.Image.DockerImageReference)
+
+				if err != nil {
+					return err
+				}
+
+				if requestImageStreamTag.Image.Signatures == nil {
+					errorMessage := fmt.Sprintf("No Signatures Exist on Image '%s'", dockerImageID)
+
+					logrus.Warnf(errorMessage)
+
+					err = verification.UpdateOnImageVerificationInitializationFailure(errorMessage, *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+					return nil
+
+				} else {
+					logrus.Infof("Signatures Exist on Image '%s'", dockerImageID)
+
+					// Setup default values
+					gpgSecretName := h.config.GpgSecret
+					gpgSignBy := h.config.GpgSignBy
+
+					// Check if Secret if found
+					if imageVerificationRequest.Spec.SigningKeySecretName != "" {
+
+						verificationKeySecret := &corev1.Secret{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Secret",
+								APIVersion: "v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: imageVerificationRequest.Namespace,
+								Name:      imageVerificationRequest.Spec.SigningKeySecretName,
+							},
+						}
+
+						err := sdk.Get(verificationKeySecret)
+
+						if k8serrors.IsNotFound(err) {
+
+							errorMessage := fmt.Sprintf("GPG Secret '%s' Not Found in Namespace '%s'", imageVerificationRequest.Spec.SigningKeySecretName, imageVerificationRequest.Namespace)
+							logrus.Warnf(errorMessage)
+							err = verification.UpdateOnImageVerificationInitializationFailure(errorMessage, *imageVerificationRequest)
+
+							if err != nil {
+								return err
+							}
+
+							return nil
+						}
+
+						logrus.Infof("Copying Secret '%s' to Project '%s'", imageVerificationRequest.Spec.SigningKeySecretName, h.config.TargetProject)
+						// Create a copy
+						verificationKeySecretCopy := verificationKeySecret.DeepCopy()
+						verificationKeySecretCopy.Name = string(imageVerificationRequest.ObjectMeta.UID)
+						verificationKeySecretCopy.Namespace = h.config.TargetProject
+						verificationKeySecretCopy.ResourceVersion = ""
+						verificationKeySecretCopy.UID = ""
+
+						err = sdk.Create(verificationKeySecretCopy)
+
+						if k8serrors.IsAlreadyExists(err) {
+							logrus.Info("Secret already exists. Updating...")
+							err = sdk.Update(verificationKeySecretCopy)
+						}
+
+						gpgSecretName = verificationKeySecretCopy.Name
+
+						if imageVerificationRequest.Spec.VerificationKeySignBy != "" {
+							gpgSignBy = imageVerificationRequest.Spec.VerificationKeySignBy
+						}
+
+					}
+
+					verificationPodName, err := verification.LaunchVerificationPod(h.config, fmt.Sprintf("%s:%s", dockerImageRegistry, requestIsTag), dockerImageID, string(imageVerificationRequest.ObjectMeta.UID), imageVerificationRequestMetadataKey, gpgSecretName, gpgSignBy)
+
+					if err != nil {
+						errorMessage := fmt.Sprintf("Error Occurred Creating Verification Pod '%v'", err)
+
+						logrus.Errorf(errorMessage)
+
+						err = verification.UpdateOnImageVerificationInitializationFailure(errorMessage, *imageVerificationRequest)
+
+						if err != nil {
+							return err
+						}
+
+						return nil
+					}
+
+					logrus.Infof("Verification Pod Launched '%s'", verificationPodName)
+
+					err = verification.UpdateOnVerificationPodLaunch(fmt.Sprintf("Verification Pod Launched '%s'", verificationPodName), dockerImageID, *imageVerificationRequest)
+
+					if err != nil {
+						return err
+					}
+
+					return nil
+
+				}
+			}
+
+		}
 
 	case *corev1.Pod:
 

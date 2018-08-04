@@ -110,7 +110,7 @@ func createVerificationPod(signScanImage string, targetProject string, image str
 				Name:            "image-verifier",
 				Image:           signScanImage,
 				ImagePullPolicy: corev1.PullAlways,
-				Command:         []string{"/bin/bash", "-c", "mkdir -p ~/.gnupg && cp /root/gpg/* ~/.gnupg && /usr/local/bin/sign-image"}, //TODO
+				Command:         []string{"/bin/bash", "-c", "mkdir -p ~/.gnupg && cp /root/gpg/* ~/.gnupg && /usr/local/bin/verify-image"},
 				Env: []corev1.EnvVar{
 					{
 						Name:      "NAMESPACE",
@@ -125,7 +125,7 @@ func createVerificationPod(signScanImage string, targetProject string, image str
 						Value: imageDigest,
 					},
 					{
-						Name:  "SIGNBY",
+						Name:  "SIGNEDBY",
 						Value: signedBy,
 					},
 				},

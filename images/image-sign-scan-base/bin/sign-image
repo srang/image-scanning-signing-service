@@ -4,12 +4,13 @@ oc login https://kubernetes.default.svc.cluster.local --certificate-authority=/v
 
 IMAGE_SIGNATURE_EXISTS=$(oc get images ${IMAGE_DIGEST} -o json | jq -r 'has("signatures")')
 if [ "${IMAGE_SIGNATURE_EXISTS}" == "true" ]; then
-  echo "Signature exists on image. Skipping signing"
-  exit 0
+  echo "Signature already exists on image."
+#  exit -1
 fi
 
 SA_FULLNAME=$(oc whoami)
 SA_NAME="${SA_FULLNAME##*:}"
+# TODO can this be removed bc of fieldRef env var?
 NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
 SA_JSON=$(oc get sa -n $NAMESPACE $SA_NAME -o json)
 DOCKERCFG_SECRET_NAME=$(echo "${SA_JSON}" | jq -r ".imagePullSecrets[] | select( .name | contains(\"${SA_NAME}-dockercfg\")).name")
