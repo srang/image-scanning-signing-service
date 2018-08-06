@@ -15,7 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func UpdateOnScanningPodLaunch(message string, unsignedImage string, imageScanningRequest v1alpha2.ImageScanningRequest) error {
+func UpdateOnScanningPodLaunch(message string, imageScanningRequest v1alpha2.ImageScanningRequest) error {
 	imageScanningRequestCopy := imageScanningRequest.DeepCopy()
 
 	condition := util.NewImageExecutionCondition(message, corev1.ConditionTrue, v1alpha2.ImageExecutionConditionInitialization)
@@ -81,6 +81,7 @@ func LaunchScanningPod(config config.Config, image string, ownerID string, owner
 		logrus.Errorf("Error Generating Pod: %v'", err)
 		return "", err
 	}
+
 	err = sdk.Create(pod)
 
 	if err != nil {

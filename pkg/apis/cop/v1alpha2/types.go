@@ -23,6 +23,14 @@ type ImageScanningRequestList struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+type ImageVerificationRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []ImageVerificationRequest `json:"items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type ImageSigningRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -37,6 +45,13 @@ type ImageScanningRequest struct {
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              ImageScanningRequestSpec   `json:"spec"`
 	Status            ImageScanningRequestStatus `json:"status,omitempty"`
+}
+
+type ImageVerificationRequest struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              ImageVerificationRequestSpec   `json:"spec"`
+	Status            ImageVerificationRequestStatus `json:"status,omitempty"`
 }
 
 type ImageSigningRequestSpec struct {
@@ -64,6 +79,20 @@ type ImageScanningRequestStatus struct {
 	EndTime    metav1.Time               `json:"endTime,omitempty"`
 }
 
+type ImageVerificationRequestSpec struct {
+	ImageStreamTag       string `json:"imageStreamTag"`
+	SigningKeySecretName string `json:"signingKeySecretName,omitempty"`
+	SigningKeySignedBy   string `json:"signingKeySignedBy,omitempty"`
+}
+type ImageVerificationRequestStatus struct {
+	Conditions      []ImageExecutionCondition `json:"conditions,omitempty"`
+	Phase           ImageExecutionPhase       `json:"phase,omitempty"`
+	SignatureName	string					  `json:"signatureName,omitempty"`
+	SignatureStatus SignatureStatus           `json:"signatureStatus,omitempty"`
+	StartTime       metav1.Time               `json:"startTime,omitempty"`
+	EndTime         metav1.Time               `json:"endTime,omitempty"`
+}
+
 type ScanResult struct {
 	TotalRules  int `json:"totalRules"`
 	PassedRules int `json:"passedRules"`
@@ -76,6 +105,13 @@ type ImageExecutionCondition struct {
 	LastTransitionTime metav1.Time                 `json:"lastTransitionTime,omitempty"`
 	Type               ImageExecutionConditionType `json:"type,omitempty"`
 }
+
+type SignatureStatus string
+
+const (
+	SignatureValid   SignatureStatus = "Valid"
+	SignatureInvalid SignatureStatus = "Invalid"
+)
 
 type ImageExecutionPhase string
 

@@ -1,0 +1,13 @@
+#!/bin/bash
+oc login https://kubernetes.default.svc.cluster.local --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) > /dev/null 2>&1
+
+IMAGE_SIGNATURE_EXISTS=$(oc get images ${IMAGE_DIGEST} -o json | jq -r 'has("signatures")')
+if [ "${IMAGE_SIGNATURE_EXISTS}" == "false" ]; then
+  echo "No signatures exist on image."
+  exit -1
+fi
+
+oc adm verify-image-signature \
+    $IMAGE_DIGEST
+    --expected-identity=172.30.1.1:5000/hello-go/hello-go:latest \
+    --public-key=/home/srang/.gnupg/pubring.gpg

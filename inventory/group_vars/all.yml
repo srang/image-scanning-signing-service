@@ -10,6 +10,10 @@
           file: "{{ inventory_dir }}/../examples/image-scanning-request-crd.yml"
           tags:
             - core
+        - name: imageverificationrequest
+          file: "{{ inventory_dir }}/../examples/image-verification-request-crd.yml"
+          tags:
+            - core
     - object: projectrequest
       content:
         - name: image-management-project

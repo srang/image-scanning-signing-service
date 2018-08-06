@@ -168,7 +168,7 @@ Instead of leveraging the default gpg key that is configured within the cluster,
 First, create a new secret within the current project containing the GPG key:
 
 ```
-oc create secret mygpgkey <directory_containing_gpg_key>
+oc create secret generic mygpgkey --from-file=pubring.gpg=<location of pubring> --from-file=secring.gpg=<location of secring> --from-file=trustdb.gpg=<location of trustdb>
 ```
 
 Create a new `ImageSigningRequest` which specifies the secret and signer address:

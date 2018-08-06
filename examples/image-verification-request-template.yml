@@ -9,11 +9,10 @@ objects:
 - apiVersion: "cop.redhat.com/v1alpha2"
   kind: ImageSigningRequest
   metadata:
-    name: ${IMAGE_SIGNING_REQUEST_NAME}
+    name: ${IMAGE_VERIFICATION_REQUEST_NAME}
   spec:
     imageStreamTag: "${IMAGE_STREAM_TAG}"
-    signingKeySecretName: "${SIGNING_KEY}"
-    signingKeySignBy: "${SIGN_BY}"
+    signingKeySecretName: "${GPG_SECRET}"
 parameters:
 - name: IMAGE_SIGNING_REQUEST_NAME
   displayName: Image Signing Request Name
@@ -23,9 +22,7 @@ parameters:
   displayName: ImageStream Tag
   name: IMAGE_STREAM_TAG
   required: true
-- description: signing key
-  name: SIGNING_KEY
-  value: mygpgkey
-- description: sign by
-  name: SIGN_BY
-  value: srang2010@gmail.com
+- description: GPG key secret for verifying signed image
+  displayName: GPG key secret
+  name: GPG_SECRET
+  required: true

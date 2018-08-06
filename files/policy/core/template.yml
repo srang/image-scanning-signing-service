@@ -114,6 +114,7 @@ objects:
     resources:
     - imagesigningrequests
     - imagescanningrequests
+    - imageverificationrequests
     verbs:
     - get
     - list
